@@ -46,25 +46,25 @@ data "google_compute_subnetwork" "ad_subnet" {
 }
 
 # ==============================================================================
-# INPUT VARIABLE: Xubuntu Image Name
+# INPUT VARIABLE: Lubuntu Image Name
 # ------------------------------------------------------------------------------
-# Name of the custom Xubuntu image produced by Packer. This image is used as the
+# Name of the custom Lubuntu image produced by Packer. This image is used as the
 # boot source for GCE instances created in this module.
 # ==============================================================================
 
-variable "xubuntu_image_name" {
-  description = "Name of the Packer-built Xubuntu GCP image"
+variable "lubuntu_image_name" {
+  description = "Name of the Packer-built Lubuntu GCP image"
   type        = string
 }
 
 # ==============================================================================
 # DATA SOURCE: GCE IMAGE LOOKUP
 # ------------------------------------------------------------------------------
-# Resolves the custom Xubuntu image by name within the current GCP project.
+# Resolves the custom Lubuntu image by name within the current GCP project.
 # This allows downstream resources to reference the image self_link/id safely.
 # ==============================================================================
 
-data "google_compute_image" "xubuntu_packer_image" {
-  name    = var.xubuntu_image_name        # Image name passed in from destroy/build workflows
+data "google_compute_image" "lubuntu_packer_image" {
+  name    = var.lubuntu_image_name        # Image name passed in from destroy/build workflows
   project = local.credentials.project_id  # GCP project containing the custom image
 }
