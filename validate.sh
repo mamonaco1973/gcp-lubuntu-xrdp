@@ -10,7 +10,7 @@ echo "NOTE: Windows AD instance public IP address is $WIN_IP"
 
 
 NFS_IP=$(gcloud compute instances list \
-  --filter="name~'^xubuntu'" \
+  --filter="name~'^lubuntu'" \
   --format="value(networkInterfaces.accessConfigs[0].natIP)")
 
-echo "NOTE: Xubuntu public IP address is $NFS_IP"
+echo "NOTE: Lubuntu public IP address is $NFS_IP"

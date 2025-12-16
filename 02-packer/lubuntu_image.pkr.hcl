@@ -1,8 +1,8 @@
 # ==============================================================================
-# PACKER BUILD: Xubuntu Image for GCP (Ubuntu 24.04 LTS)
+# PACKER BUILD: Lubuntu Image for GCP (Ubuntu 24.04 LTS)
 # ------------------------------------------------------------------------------
 # Purpose:
-#   - Builds a custom Google Compute Engine image with Xubuntu + XRDP
+#   - Builds a custom Google Compute Engine image with Lubuntu + XRDP
 #   - Starts from the Canonical Ubuntu 24.04 LTS image family
 #   - Installs desktop environment, browsers, dev tools, and utilities
 #   - Publishes a timestamped image into an image family for reuse in GCE
@@ -51,15 +51,15 @@ variable "source_image_family" {
 # SOURCE: GCE IMAGE BUILDER
 # ==============================================================================
 
-source "googlecompute" "xubuntu_image" {
+source "googlecompute" "lubuntu_image" {
   project_id          = var.project_id
   zone                = var.zone
   source_image_family = var.source_image_family         # Base Ubuntu 24.04 LTS image family
   ssh_username        = "ubuntu"                        # Default Ubuntu user on GCE images
   machine_type        = "n2-standard-4"                 # Temporary build VM machine type
 
-  image_name   = "xubuntu-image-${local.timestamp}"     # Unique image name per build
-  image_family = "xubuntu-images"                       # Image family for versioned builds
+  image_name   = "lubuntu-image-${local.timestamp}"     # Unique image name per build
+  image_family = "lubuntu-images"                       # Image family for versioned builds
   disk_size    = 64                                     # Boot disk size (GB) for build VM
 }
 
@@ -71,7 +71,7 @@ source "googlecompute" "xubuntu_image" {
 # ==============================================================================
 
 build {
-  sources = ["source.googlecompute.xubuntu_image"]
+  sources = ["source.googlecompute.lubuntu_image"]
 
   # ----------------------------------------------------------------------------
   # Base OS packages and prerequisites
@@ -82,10 +82,10 @@ build {
   }
 
   # ----------------------------------------------------------------------------
-  # Xubuntu desktop environment
+  # Lubuntu desktop environment
   # ----------------------------------------------------------------------------
   provisioner "shell" {
-    script          = "./xubuntu.sh"
+    script          = "./lubuntu.sh"
     execute_command = "sudo -E bash '{{.Path}}'"
   }
 

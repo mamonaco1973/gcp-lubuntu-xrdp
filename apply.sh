@@ -3,9 +3,9 @@
 # apply.sh
 # ------------------------------------------------------------------------------
 # Purpose:
-#   - End-to-end build for the GCP Xubuntu environment:
+#   - End-to-end build for the GCP Lubuntu environment:
 #       01) Terraform: provision directory services (Mini-AD)
-#       02) Packer:    build the GCP Xubuntu image
+#       02) Packer:    build the GCP Lubuntu image
 #       03) Terraform: provision servers joined to the directory
 #       04) Validate:  run post-build checks
 #
@@ -48,7 +48,7 @@ fi
 cd ..
 
 # ------------------------------------------------------------------------------
-# Phase 2: Build GCP Xubuntu Image (Packer)
+# Phase 2: Build GCP Lubuntu Image (Packer)
 # ------------------------------------------------------------------------------
 
 # Extract the GCP project_id from the service account key.
@@ -59,13 +59,13 @@ project_id=$(jq -r '.project_id' "./credentials.json")
 gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 
-# Run Packer to build the Xubuntu image in GCP.
+# Run Packer to build the Lubuntu image in GCP.
 cd 02-packer
 packer init .
 
 packer build \
   -var="project_id=$project_id" \
-  xubuntu_image.pkr.hcl
+  lubuntu_image.pkr.hcl
 
 # Return to repo root.
 cd ..
@@ -74,20 +74,20 @@ cd ..
 # Phase 3: Server Deployment (Terraform)
 # ------------------------------------------------------------------------------
 
-# Determine Latest Xubuntu Image
+# Determine Latest Lubuntu Image
 
-xubuntu_image=$(gcloud compute images list \
-  --filter="name~'^xubuntu-image' AND family=xubuntu-images" \
+lubuntu_image=$(gcloud compute images list \
+  --filter="name~'^lubuntu-image' AND family=lubuntu-images" \
   --sort-by="~creationTimestamp" \
   --limit=1 \
-  --format="value(name)")  # Grabs most recently created image from 'xubuntu-images' family
+  --format="value(name)")  # Grabs most recently created image from 'lubuntu-images' family
 
-if [[ -z "$xubuntu_image" ]]; then
-  echo "ERROR: No latest image found for 'xubuntu-image' in family 'xubuntu-images'."
+if [[ -z "$lubuntu_image" ]]; then
+  echo "ERROR: No latest image found for 'lubuntu-image' in family 'lubuntu-images'."
   exit 1  # Hard fail if no image found — we can't safely destroy without this input
 fi
 
-echo "NOTE: Xubuntu image is $xubuntu_image"
+echo "NOTE: Lubuntu image is $lubuntu_image"
 
 # Build VMs that connect to / join the directory.
 cd 03-servers
@@ -97,7 +97,7 @@ terraform init
 
 # Apply the configuration (no prompt).
 terraform apply \
-  -var="xubuntu_image_name=$xubuntu_image" \
+  -var="lubuntu_image_name=$lubuntu_image" \
   -auto-approve
 
 # Return to repo root.

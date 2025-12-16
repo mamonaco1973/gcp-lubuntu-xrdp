@@ -79,11 +79,11 @@ resource "google_compute_firewall" "allow_smb" {
 
 
 # ================================================================================================
-# Xubuntu VM: NFS Gateway + AD-Joined Desktop Client
+# Lubuntu VM: NFS Gateway + AD-Joined Desktop Client
 # ================================================================================================
-# Deploys a Xubuntu 24.04 VM that:
+# Deploys a Lubuntu 24.04 VM that:
 #   - Connects to the "ad-vpc" network and "ad-subnet".
-#   - Boots from a custom Packer-built Xubuntu image.
+#   - Boots from a custom Packer-built Lubuntu image.
 #   - Runs a startup script to join the Active Directory domain and mount NFS
 #     storage from Filestore for user home directories.
 #   - Uses OS Login for secure SSH access.
@@ -94,7 +94,7 @@ resource "google_compute_firewall" "allow_smb" {
 # ================================================================================================
 
 resource "google_compute_instance" "desktop_instance" {
-  name         = "xubuntu-${random_string.vm_suffix.result}"
+  name         = "lubuntu-${random_string.vm_suffix.result}"
   machine_type = "n2-standard-4" 
   zone         = "us-central1-a"
 
@@ -103,7 +103,7 @@ resource "google_compute_instance" "desktop_instance" {
   # ----------------------------------------------------------------------------------------------
   boot_disk {
     initialize_params {
-      image = data.google_compute_image.xubuntu_packer_image.self_link
+      image = data.google_compute_image.lubuntu_packer_image.self_link
     }
   }
 
