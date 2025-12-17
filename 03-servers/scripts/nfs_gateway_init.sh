@@ -214,9 +214,9 @@ chmod 700 /home/*
 
 # Clone helper repo into /nfs and apply group permissions
 cd /nfs
-git clone https://github.com/mamonaco1973/gcp-xubuntu-xrdp.git
-chmod -R 775 gcp-xubuntu-xrdp
-chgrp -R mcloud-users gcp-xubuntu-xrdp
+git clone https://github.com/mamonaco1973/gcp-lubuntu-xrdp.git
+chmod -R 775 gcp-lubuntu-xrdp
+chgrp -R mcloud-users gcp-lubuntu-xrdp
 
 git clone https://github.com/mamonaco1973/aws-setup.git
 chmod -R 775 aws-setup
