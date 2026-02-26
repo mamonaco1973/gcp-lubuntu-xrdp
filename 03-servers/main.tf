@@ -36,11 +36,11 @@ locals {
 #   - ad-subnet located in us-central1
 # ================================================================================
 data "google_compute_network" "ad_vpc" {
-  name = "ad-vpc"
+  name = var.vpc
 }
 
 data "google_compute_subnetwork" "ad_subnet" {
-  name   = "ad-subnet"
+  name   = var.subnet
   region = "us-central1"
 }
 
