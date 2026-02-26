@@ -54,7 +54,7 @@ resource "google_secret_manager_secret_version" "admin_secret_version" {
 # ================================================================================
 resource "google_compute_firewall" "allow_rdp" {
   name    = "lubuntu-allow-rdp"
-  network = "ad-vpc"
+  network = var.vpc
 
   # Allow TCP 3389 (RDP)
   allow {
