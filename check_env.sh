@@ -56,3 +56,5 @@ gcloud auth activate-service-account --key-file="./credentials.json"
 
 # Export Application Default Credentials for dependent tools.
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
+
+./api_setup.sh

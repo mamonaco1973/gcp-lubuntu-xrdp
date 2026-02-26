@@ -1,21 +1,21 @@
-# ================================================================================================
+# ================================================================================
 # Active Directory User Credentials in GCP Secret Manager
-# ================================================================================================
+# ================================================================================
 # Provisions:
-#   1. Memorable passwords for each AD user: <word>-<6digit>
-#   2. Secret Manager entries for storing credentials.
-#   3. IAM bindings granting the service account access to retrieve these secrets.
+#   01) Memorable passwords per AD user: <word>-<6digit>
+#   02) Secret Manager secret + version for each user
+#   03) IAM binding granting secret accessor to service account
 #
-# Key Points:
-#   - Users: Admin, John Smith, Emily Davis, Raj Patel, Amit Kumar.
-#   - Password format: "<memorable_word>-<6digit>" (one word + one number per user).
-#   - Secrets stored securely in GCP Secret Manager.
-#   - Service account is granted `roles/secretmanager.secretAccessor` on all secrets.
-# ================================================================================================
+# Notes:
+#   - Users: Admin, John Smith, Emily Davis, Raj Patel, Amit Kumar
+#   - Password format: "<word>-<6digit>"
+#   - Secrets stored in GCP Secret Manager
+#   - Grants roles/secretmanager.secretAccessor on each secret
+# ================================================================================
 
-# ================================================================================================
+# ================================================================================
 # Memorable Word List
-# ================================================================================================
+# ================================================================================
 locals {
   memorable_words = [
     "bright",
@@ -46,9 +46,9 @@ locals {
   ]
 }
 
-# ================================================================================================
+# ================================================================================
 # User Accounts to Generate
-# ================================================================================================
+# ================================================================================
 locals {
   ad_users = {
     admin  = "Admin"
@@ -59,27 +59,27 @@ locals {
   }
 }
 
-# ================================================================================================
+# ================================================================================
 # Random Word (one per user)
-# ================================================================================================
+# ================================================================================
 resource "random_shuffle" "word" {
   for_each     = local.ad_users
   input        = local.memorable_words
   result_count = 1
 }
 
-# ================================================================================================
+# ================================================================================
 # Random 6-digit number (one per user)
-# ================================================================================================
+# ================================================================================
 resource "random_integer" "num" {
   for_each = local.ad_users
   min      = 100000
   max      = 999999
 }
 
-# ================================================================================================
+# ================================================================================
 # Build the Password: <word>-<number>
-# ================================================================================================
+# ================================================================================
 locals {
   passwords = {
     for user, fullname in local.ad_users :
@@ -87,12 +87,12 @@ locals {
   }
 }
 
-# ================================================================================================
+# ================================================================================
 # Create Secret + Version for Each User
-# ================================================================================================
+# ================================================================================
 resource "google_secret_manager_secret" "ad_secret" {
   for_each  = local.ad_users
-  secret_id = "${each.key}-ad-credentials"
+  secret_id = "${each.key}-ad-credentials-lubuntu"
 
   replication {
     auto {}
@@ -101,7 +101,7 @@ resource "google_secret_manager_secret" "ad_secret" {
 
 resource "google_secret_manager_secret_version" "ad_secret_version" {
   for_each = local.ad_users
-  secret  = google_secret_manager_secret.ad_secret[each.key].id
+  secret   = google_secret_manager_secret.ad_secret[each.key].id
 
   secret_data = jsonencode({
     username = "${each.key}@${var.dns_zone}"
@@ -109,9 +109,9 @@ resource "google_secret_manager_secret_version" "ad_secret_version" {
   })
 }
 
-# ================================================================================================
+# ================================================================================
 # Locals: Secret List
-# ================================================================================================
+# ================================================================================
 locals {
   secrets = [
     for user, fullname in local.ad_users :
@@ -119,9 +119,9 @@ locals {
   ]
 }
 
-# ================================================================================================
+# ================================================================================
 # IAM Binding: Grant Secret Access
-# ================================================================================================
+# ================================================================================
 resource "google_secret_manager_secret_iam_binding" "secret_access" {
   for_each  = toset(local.secrets)
   secret_id = each.key

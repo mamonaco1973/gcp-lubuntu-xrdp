@@ -1,128 +1,126 @@
-# ================================================================================================
-# Random String, Firewall (SSH), and Ubuntu VM for AD/NFS Gateway
-# ================================================================================================
+# ================================================================================
+# Random String, Firewall, and Lubuntu VM for AD/NFS Gateway
+# --------------------------------------------------------------------------------
 # Provisions:
-#   1. Random string suffix for uniqueness across resource names.
-#   2. Firewall rule allowing inbound SSH (port 22) to tagged VMs.
-#   3. Ubuntu 24.04 Compute Engine VM configured as an NFS gateway and AD join client.
-#   4. Data source for the latest Ubuntu 24.04 LTS image.
+#   01) Random suffix for unique resource names
+#   02) Firewall rules for SSH and SMB
+#   03) Lubuntu 24.04 VM as AD-joined NFS gateway
+#   04) Data source for latest Ubuntu 24.04 LTS image
 #
 # Key Points:
-#   - Random suffix prevents name collisions when deploying multiple environments.
-#   - SSH rule is wide open (0.0.0.0/0) — ⚠️ insecure for production.
-#   - VM auto-runs a startup script to join AD and mount NFS from Filestore.
-#   - Uses service account for GCP API access.
-# ================================================================================================
+#   - Random suffix prevents name collisions
+#   - SSH and SMB rules open to 0.0.0.0/0 (lab only)
+#   - VM runs startup script to join AD and mount NFS
+#   - Uses service account for GCP API access
+# ================================================================================
 
 
-# ================================================================================================
+# ================================================================================
 # Random String Generator
-# ================================================================================================
-# Generates a 6-character lowercase suffix to ensure resource name uniqueness.
-# ================================================================================================
+# --------------------------------------------------------------------------------
+# Generates 10-character lowercase suffix for uniqueness.
+# ================================================================================
 resource "random_string" "vm_suffix" {
-  length  = 10    # Number of characters in the generated string
-  special = false # Excludes special characters (DNS-friendly)
+  length  = 10    # Number of characters in generated string
+  special = false # Exclude special characters (DNS-friendly)
   upper   = false # Lowercase only for consistency
 }
 
 
-# ================================================================================================
+# ================================================================================
 # Firewall Rule: Allow SSH
-# ================================================================================================
-# Opens TCP port 22 for SSH access to VMs tagged with "allow-ssh".
+# --------------------------------------------------------------------------------
+# Opens TCP port 22 for instances tagged with allow-ssh.
 #
 # Key Points:
-#   - Applies only to instances with "allow-ssh" tag.
-#   - Source range is open to the internet (0.0.0.0/0) — ⚠️ restrict in production.
-# ================================================================================================
+#   - Tag-based targeting
+#   - Source range 0.0.0.0/0 (restrict in production)
+# ================================================================================
 resource "google_compute_firewall" "allow_ssh" {
-  name    = "allow-ssh"
-  network = "ad-vpc"
+  name    = "lubuntu-allow-ssh"
+  network = var.vpc
 
   allow {
     protocol = "tcp"
     ports    = ["22"]
   }
 
-  # Tag-based targeting (applies only to instances with this tag)
-  target_tags = ["allow-ssh"]
+  # Applies only to instances with this tag
+  target_tags = ["lubuntu-allow-ssh"]
 
-  # ⚠️ Lab only; tighten for production
+  # Lab only; tighten for production
   source_ranges = ["0.0.0.0/0"]
 }
 
-# ================================================================================================
-# Firewall Rule: Allow SMB (Windows File Sharing)
-# ================================================================================================
-# Opens TCP port 445 for SMB access to VMs tagged with "allow-smb".
+# ================================================================================
+# Firewall Rule: Allow SMB
+# --------------------------------------------------------------------------------
+# Opens TCP port 445 for instances tagged with allow-smb.
 #
 # Key Points:
-#   - Applies only to instances with "allow-smb" tag.
-#   - Source range is open to the internet (0.0.0.0/0) — ⚠️ restrict in production.
-# ================================================================================================
+#   - Tag-based targeting
+#   - Source range 0.0.0.0/0 (restrict in production)
+# ================================================================================
 resource "google_compute_firewall" "allow_smb" {
-  name    = "allow-smb"
-  network = "ad-vpc"
+  name    = "lubuntu-allow-smb"
+  network = var.vpc
 
   allow {
     protocol = "tcp"
     ports    = ["445"]
   }
 
-  # Tag-based targeting (applies only to instances with this tag)
-  target_tags = ["allow-smb"]
+  # Applies only to instances with this tag
+  target_tags = ["lubuntu-allow-smb"]
 
-  # ⚠️ Lab only; tighten for production
+  # Lab only; tighten for production
   source_ranges = ["0.0.0.0/0"]
 }
 
 
-# ================================================================================================
+# ================================================================================
 # Lubuntu VM: NFS Gateway + AD-Joined Desktop Client
-# ================================================================================================
-# Deploys a Lubuntu 24.04 VM that:
-#   - Connects to the "ad-vpc" network and "ad-subnet".
-#   - Boots from a custom Packer-built Lubuntu image.
-#   - Runs a startup script to join the Active Directory domain and mount NFS
-#     storage from Filestore for user home directories.
-#   - Uses OS Login for secure SSH access.
+# --------------------------------------------------------------------------------
+# Deploys Lubuntu 24.04 VM that:
+#   - Connects to ad-vpc and ad-subnet
+#   - Boots from Packer-built image
+#   - Runs startup script to join AD and mount Filestore NFS
+#   - Uses OS Login for secure SSH
 #
 # Key Points:
-#   - Startup script injects AD domain FQDN and Filestore IP at boot.
-#   - Service account grants required GCP API access.
-# ================================================================================================
-
+#   - Startup injects domain FQDN and Filestore IP
+#   - Service account grants required API access
+# ================================================================================
 resource "google_compute_instance" "desktop_instance" {
   name         = "lubuntu-${random_string.vm_suffix.result}"
-  machine_type = "n2-standard-4" 
+  machine_type = "n2-standard-4"
   zone         = "us-central1-a"
 
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   # Boot Disk
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   boot_disk {
     initialize_params {
       image = data.google_compute_image.lubuntu_packer_image.self_link
     }
   }
 
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   # Network Interface
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   network_interface {
-    network    = "ad-vpc"
-    subnetwork = "ad-subnet"
+    network    = var.vpc
+    subnetwork = var.subnet
 
-    # Ephemeral public IP (required for SSH access)
+    # Ephemeral public IP for SSH access
     access_config {}
   }
 
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   # Metadata (Startup Script + Config)
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   metadata = {
-    enable-oslogin = "TRUE" # Enforce OS Login for secure SSH
+    enable-oslogin = "TRUE" # Enforce OS Login
 
     startup-script = templatefile("./scripts/nfs_gateway_init.sh", {
       domain_fqdn   = "mcloud.mikecloud.com"
@@ -134,28 +132,28 @@ resource "google_compute_instance" "desktop_instance" {
     })
   }
 
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   # Service Account
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   service_account {
     email  = local.service_account_email
     scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 
-  # ----------------------------------------------------------------------------------------------
+  # ------------------------------------------------------------------------------
   # Firewall Tags
-  # ----------------------------------------------------------------------------------------------
-  # Applies both SSH and NFS firewall rules
-  tags = ["allow-ssh", "allow-nfs", "allow-smb","allow-rdp"]
+  # ------------------------------------------------------------------------------
+  # Applies SSH and SMB firewall rules
+  tags = ["lubuntu-allow-ssh", "lubuntu-allow-nfs", "lubuntu-allow-smb", "lubuntu-allow-rdp"]
 }
 
 
-# ================================================================================================
+# ================================================================================
 # Data Source: Latest Ubuntu 24.04 LTS Image
-# ================================================================================================
-# Dynamically fetches the most recent Ubuntu 24.04 LTS image.
-# Ensures VMs always launch with a patched image.
-# ================================================================================================
+# --------------------------------------------------------------------------------
+# Fetch most recent Ubuntu 24.04 LTS image.
+# Ensures VMs launch with patched image.
+# ================================================================================
 data "google_compute_image" "ubuntu_latest" {
   family  = "ubuntu-2404-lts-amd64"
   project = "ubuntu-os-cloud"

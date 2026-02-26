@@ -1,34 +1,31 @@
 #!/bin/bash
-# ==============================================================================
+# ================================================================================
 # destroy.sh
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # Purpose:
-#   - Tear down the GCP Lubuntu environment:
-#       01) Destroy servers (Terraform) using the latest Lubuntu image name
-#       02) Delete all Lubuntu images from the project (best-effort)
-#       03) Destroy directory services (Terraform)
+#   01) Destroy servers using latest Lubuntu image
+#   02) Delete Lubuntu images (best-effort)
+#   03) Destroy directory services
 #
 # Notes:
-#   - Uses the most recently created image in family 'lubuntu-images' whose name
-#     matches '^lubuntu-image' as an input to 03-servers Terraform destroy.
-#   - Image deletion is best-effort and continues on failures.
-# ==============================================================================
-
-#!/bin/bash
+#   - Uses newest image in family lubuntu-images
+#   - Image deletion continues on failure
+# ================================================================================
 
 # ------------------------------------------------------------------------------
 # Determine Latest Lubuntu Image
 # ------------------------------------------------------------------------------
 
+# Query newest image in family lubuntu-images
 lubuntu_image=$(gcloud compute images list \
   --filter="name~'^lubuntu-image' AND family=lubuntu-images" \
   --sort-by="~creationTimestamp" \
   --limit=1 \
-  --format="value(name)")  # Grabs most recently created image from 'lubuntu-images' family
+  --format="value(name)")
 
 if [[ -z "$lubuntu_image" ]]; then
-  echo "ERROR: No latest image found for 'lubuntu-image' in family 'lubuntu-images'."
-  exit 1  # Hard fail if no image found — we can't safely destroy without this input
+  echo "ERROR: No latest lubuntu-image found in family lubuntu-images."
+  exit 1
 fi
 
 echo "NOTE: Lubuntu image is $lubuntu_image"
@@ -50,18 +47,19 @@ cd ..
 # Phase 2: Delete Lubuntu Images (Best-Effort)
 # ------------------------------------------------------------------------------
 
+# List images with names starting with lubuntu
 image_list=$(gcloud compute images list \
   --format="value(name)" \
-  --filter="name~'^(lubuntu)'")     # Regex match for names starting with 'lubuntu'
+  --filter="name~'^(lubuntu)'")
 
-# Check if any were found
 if [ -z "$image_list" ]; then
-  echo "NOTE: No images found starting with 'lubuntu'. Continuing..."
+  echo "NOTE: No images found starting with lubuntu. Continuing..."
 else
   echo "NOTE: Deleting images..."
   for image in $image_list; do
     echo "NOTE: Deleting image: $image"
-    gcloud compute images delete "$image" --quiet || echo "WARNING: Failed to delete image: $image"  # Continue even if deletion fails
+    gcloud compute images delete "$image" --quiet \
+      || echo "WARNING: Failed to delete image: $image"
   done
 fi
 

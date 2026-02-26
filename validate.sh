@@ -1,16 +1,59 @@
-
 #!/bin/bash
+# ==============================================================================
+# validate.sh - LUBUNTU Quick Start Validation (GCP)
+# ------------------------------------------------------------------------------
+# Purpose:
+#   - Prints external IP addresses for:
+#       - Windows AD admin host (win-ad-*)
+#       - Linux domain-joined host (lubuntu-*)
+#   - Scoped only to instances attached to VPC: lubuntu-vpc
+#
+# Requirements:
+#   - gcloud CLI installed and authenticated
+#   - gcloud project set (gcloud config set project <PROJECT_ID>)
+# ==============================================================================
 
-WIN_IP=$(gcloud compute instances list \
-  --filter="name~'^win-ad'" \
-  --format="value(networkInterfaces.accessConfigs[0].natIP)")
+set -euo pipefail
 
-echo "NOTE: Windows AD instance public IP address is $WIN_IP"
+# ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
+PROJECT_ID="$(gcloud config get-value project 2>/dev/null)"
+WIN_PREFIX="win-ad-"
+LINUX_PREFIX="lubuntu-"
+VPC_NAME="lubuntu-vpc"
 
+# ------------------------------------------------------------------------------
+# Pre-Checks
+# ------------------------------------------------------------------------------
+if [ -z "${PROJECT_ID}" ]; then
+  echo "ERROR: No GCP project set."
+  exit 1
+fi
 
+# ------------------------------------------------------------------------------
+# Lookups (Scoped to VPC)
+# ------------------------------------------------------------------------------
+windows_ip="$(gcloud compute instances list \
+  --filter="name~'^${WIN_PREFIX}.*' AND networkInterfaces.network:${VPC_NAME}" \
+  --format="value(networkInterfaces[0].accessConfigs[0].natIP)" \
+  --limit=1 2>/dev/null)"
 
-NFS_IP=$(gcloud compute instances list \
-  --filter="name~'^lubuntu'" \
-  --format="value(networkInterfaces.accessConfigs[0].natIP)")
+linux_ip="$(gcloud compute instances list \
+  --filter="name~'^${LINUX_PREFIX}.*' AND networkInterfaces.network:${VPC_NAME}" \
+  --format="value(networkInterfaces[0].accessConfigs[0].natIP)" \
+  --limit=1 2>/dev/null)"
 
-echo "NOTE: Lubuntu public IP address is $NFS_IP"
+# ------------------------------------------------------------------------------
+# Quick Start Output
+# ------------------------------------------------------------------------------
+echo ""
+echo "============================================================================"
+echo "LUBUNTU Quick Start - Validation Output (GCP)"
+echo "============================================================================"
+echo ""
+
+printf "%-28s %s\n" "NOTE: Windows RDP Host  :" "${windows_ip:-<not found>}"
+printf "%-28s %s\n" "NOTE: Lubuntu Host Host :" "${linux_ip:-<not found>}"
+
+echo ""

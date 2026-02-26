@@ -1,18 +1,17 @@
 #!/bin/bash
-# ==============================================================================
+# ================================================================================
 # apply.sh
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # Purpose:
-#   - End-to-end build for the GCP Lubuntu environment:
-#       01) Terraform: provision directory services (Mini-AD)
-#       02) Packer:    build the GCP Lubuntu image
-#       03) Terraform: provision servers joined to the directory
-#       04) Validate:  run post-build checks
+#   01) Terraform: provision directory services (Mini-AD)
+#   02) Packer:    build GCP Lubuntu image
+#   03) Terraform: deploy servers joined to directory
+#   04) Validate:  run post-build checks
 #
 # Assumptions:
-#   - ./credentials.json exists in the repo root (service account key)
-#   - check_env.sh validates required tools and environment pre-reqs
-# ==============================================================================
+#   - ./credentials.json exists (service account key)
+#   - check_env.sh validates tools and environment
+# ================================================================================
 
 set -e
 
@@ -20,7 +19,7 @@ set -e
 # Pre-flight: Validate environment
 # ------------------------------------------------------------------------------
 
-# Run environment checks (tools, env vars, config). Exit on failure.
+# Run environment checks (tools, env vars, config)
 ./check_env.sh
 if [ $? -ne 0 ]; then
   echo "ERROR: Environment check failed. Exiting."
@@ -31,35 +30,36 @@ fi
 # Phase 1: Directory Services (Terraform)
 # ------------------------------------------------------------------------------
 
-# Build Active Directory / directory services.
+# Provision Active Directory / directory services
 cd 01-directory
 
-# Initialize Terraform (providers, backend, etc.).
+# Initialize Terraform (providers, backend)
 terraform init
 
-# Apply the configuration (no prompt).
+# Apply configuration (no prompt)
 terraform apply -auto-approve
 if [ $? -ne 0 ]; then
   echo "ERROR: Terraform apply failed in 01-directory. Exiting."
   exit 1
 fi
 
-# Return to repo root.
+# Return to repo root
 cd ..
 
 # ------------------------------------------------------------------------------
 # Phase 2: Build GCP Lubuntu Image (Packer)
 # ------------------------------------------------------------------------------
 
-# Extract the GCP project_id from the service account key.
+# Extract GCP project_id from service account key
 project_id=$(jq -r '.project_id' "./credentials.json")
 
-# Authenticate gcloud using the local service account key.
-# Also export GOOGLE_APPLICATION_CREDENTIALS for tools that use ADC.
-gcloud auth activate-service-account --key-file="./credentials.json" > /dev/null 2> /dev/null
+# Authenticate gcloud with service account key
+# Export GOOGLE_APPLICATION_CREDENTIALS for ADC-compatible tools
+gcloud auth activate-service-account --key-file="./credentials.json" \
+  > /dev/null 2> /dev/null
 export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 
-# Run Packer to build the Lubuntu image in GCP.
+# Build Lubuntu image with Packer
 cd 02-packer
 packer init .
 
@@ -67,45 +67,44 @@ packer build \
   -var="project_id=$project_id" \
   lubuntu_image.pkr.hcl
 
-# Return to repo root.
+# Return to repo root
 cd ..
 
 # ------------------------------------------------------------------------------
 # Phase 3: Server Deployment (Terraform)
 # ------------------------------------------------------------------------------
 
-# Determine Latest Lubuntu Image
-
+# Determine latest Lubuntu image in family lubuntu-images
 lubuntu_image=$(gcloud compute images list \
   --filter="name~'^lubuntu-image' AND family=lubuntu-images" \
   --sort-by="~creationTimestamp" \
   --limit=1 \
-  --format="value(name)")  # Grabs most recently created image from 'lubuntu-images' family
+  --format="value(name)")
 
 if [[ -z "$lubuntu_image" ]]; then
-  echo "ERROR: No latest image found for 'lubuntu-image' in family 'lubuntu-images'."
-  exit 1  # Hard fail if no image found — we can't safely destroy without this input
+  echo "ERROR: No latest lubuntu-image found in family lubuntu-images."
+  exit 1
 fi
 
 echo "NOTE: Lubuntu image is $lubuntu_image"
 
-# Build VMs that connect to / join the directory.
+# Deploy VMs that join the directory
 cd 03-servers
 
-# Initialize Terraform (providers, backend, etc.).
+# Initialize Terraform
 terraform init
 
-# Apply the configuration (no prompt).
+# Apply configuration (no prompt)
 terraform apply \
   -var="lubuntu_image_name=$lubuntu_image" \
   -auto-approve
 
-# Return to repo root.
+# Return to repo root
 cd ..
 
 # ------------------------------------------------------------------------------
 # Post-build: Validate
 # ------------------------------------------------------------------------------
 
-# Run validation checks after provisioning completes.
+# Run validation checks
 ./validate.sh
