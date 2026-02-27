@@ -42,6 +42,7 @@ terraform destroy \
   -auto-approve
 
 cd ..
+exit 0
 
 # ------------------------------------------------------------------------------
 # Phase 2: Delete Lubuntu Images (Best-Effort)
