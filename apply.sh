@@ -63,9 +63,9 @@ export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/credentials.json"
 cd 02-packer
 packer init .
 
-#packer build \
-#  -var="project_id=$project_id" \
-#  lubuntu_image.pkr.hcl
+packer build \
+  -var="project_id=$project_id" \
+  lubuntu_image.pkr.hcl
 
 # Return to repo root
 cd ..
