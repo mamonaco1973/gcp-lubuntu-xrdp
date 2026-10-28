@@ -55,10 +55,17 @@ secretValue=$(gcloud secrets versions access latest --secret="admin-ad-credentia
 admin_password=$(echo $secretValue | jq -r '.password')                 # Extract password
 admin_username=$(echo $secretValue | jq -r '.username' | sed 's/@.*//') # Extract username w/o domain
 
-# Use `realm` to join the AD domain (via Samba membership software)
-# Credentials piped in securely, logs captured for troubleshooting
-echo -e "$admin_password" | sudo /usr/sbin/realm join --membership-software=samba \
-    -U "$admin_username" ${domain_fqdn} --verbose >> /root/join.log 2>&1
+# Use `realm` to join the AD domain (via Samba membership software).
+# The DC can still be settling when this VM boots, so retry the join.
+for i in $(seq 1 10); do
+  if echo -e "$admin_password" | sudo /usr/sbin/realm join --membership-software=samba \
+      -U "$admin_username" ${domain_fqdn} --verbose >> /root/join.log 2>&1; then
+    break
+  fi
+  [ "$i" -eq 10 ] && exit 1
+  echo "realm join failed ($i/10); retrying" >> /root/join.log
+  sleep 30
+done
     
 # ---------------------------------------------------------------------------------
 # Section 4: Allow Password Authentication for AD Users

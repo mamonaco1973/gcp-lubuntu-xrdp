@@ -1,9 +1,9 @@
 # ==============================================================================
-# PACKER BUILD: Lubuntu Image for GCP (Ubuntu 24.04 LTS)
+# PACKER BUILD: Lubuntu Image for GCP (Ubuntu 26.04 LTS)
 # ------------------------------------------------------------------------------
 # Purpose:
 #   - Builds a custom Google Compute Engine image with Lubuntu + XRDP
-#   - Starts from the Canonical Ubuntu 24.04 LTS image family
+#   - Starts from the Canonical Ubuntu 26.04 LTS image family
 #   - Installs desktop environment, browsers, dev tools, and utilities
 #   - Publishes a timestamped image into an image family for reuse in GCE
 # ==============================================================================
@@ -42,9 +42,9 @@ variable "zone" {
 }
 
 variable "source_image_family" {
-  description = "Base GCP image family (e.g., ubuntu-2404-lts-amd64)"
+  description = "Base GCP image family (e.g., ubuntu-2604-lts-amd64)"
   type        = string
-  default     = "ubuntu-2404-lts-amd64"
+  default     = "ubuntu-2604-lts-amd64"
 }
 
 # ==============================================================================
@@ -54,7 +54,7 @@ variable "source_image_family" {
 source "googlecompute" "lubuntu_image" {
   project_id          = var.project_id
   zone                = var.zone
-  source_image_family = var.source_image_family         # Base Ubuntu 24.04 LTS image family
+  source_image_family = var.source_image_family         # Base Ubuntu 26.04 LTS image family
   ssh_username        = "ubuntu"                        # Default Ubuntu user on GCE images
   machine_type        = "n2-standard-4"                 # Temporary build VM machine type
 

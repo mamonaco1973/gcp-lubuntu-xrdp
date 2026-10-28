@@ -4,8 +4,8 @@
 # Provisions:
 #   01) Random suffix for unique resource names
 #   02) Firewall rules for SSH and SMB
-#   03) Lubuntu 24.04 VM as AD-joined NFS gateway
-#   04) Data source for latest Ubuntu 24.04 LTS image
+#   03) Lubuntu 26.04 VM as AD-joined NFS gateway
+#   04) Data source for latest Ubuntu 26.04 LTS image
 #
 # Key Points:
 #   - Random suffix prevents name collisions
@@ -81,7 +81,7 @@ resource "google_compute_firewall" "allow_smb" {
 # ================================================================================
 # Lubuntu VM: NFS Gateway + AD-Joined Desktop Client
 # --------------------------------------------------------------------------------
-# Deploys Lubuntu 24.04 VM that:
+# Deploys Lubuntu 26.04 VM that:
 #   - Connects to ad-vpc and ad-subnet
 #   - Boots from Packer-built image
 #   - Runs startup script to join AD and mount Filestore NFS
@@ -149,12 +149,12 @@ resource "google_compute_instance" "desktop_instance" {
 
 
 # ================================================================================
-# Data Source: Latest Ubuntu 24.04 LTS Image
+# Data Source: Latest Ubuntu 26.04 LTS Image
 # --------------------------------------------------------------------------------
-# Fetch most recent Ubuntu 24.04 LTS image.
+# Fetch most recent Ubuntu 26.04 LTS image.
 # Ensures VMs launch with patched image.
 # ================================================================================
 data "google_compute_image" "ubuntu_latest" {
-  family  = "ubuntu-2404-lts-amd64"
+  family  = "ubuntu-2604-lts-amd64"
   project = "ubuntu-os-cloud"
 }

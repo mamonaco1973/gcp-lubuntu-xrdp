@@ -8,26 +8,14 @@ set -euo pipefail
 #   - Samba utilities required for Kerberos, NTLM, and domain discovery
 # ==========================================================================================
 
-# ------------------------------------------------------------------------------------------
-# XRDP has issues with snap so disable and remove it first
-# ------------------------------------------------------------------------------------------
-
 export DEBIAN_FRONTEND=noninteractive
 
-echo "NOTE: Waiting for snap seeding to finish..."
-while snap changes | grep -qE 'Doing|Wait'; do
-  sleep 5
-done
-
+# Snap stays installed: Firefox is a snap on 26.04, and the XAUTHORITY
+# export in /etc/xrdp/startwm.sh (xrdp.sh) lets snaps open windows under XRDP.
+# GCP images ship gcloud as a snap; gcloudcli.sh installs the apt package
+# instead, so remove the snap once seeding has finished.
+sudo snap wait system seed.loaded
 sudo snap remove --purge google-cloud-cli
-sudo snap remove --purge core22 || true
-sudo snap remove --purge snapd || true
-sudo apt-get purge -y snapd
-sudo apt-get autoremove -y --purge
-sudo rm -rf /var/cache/snapd /var/lib/snapd ~/snap
-
-echo -e "Package: snapd\nPin: release *\nPin-Priority: -10" \
-  | sudo tee /etc/apt/preferences.d/nosnap.pref >/dev/null
 
 sudo apt-get update -y
 
