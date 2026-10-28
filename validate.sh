@@ -53,7 +53,23 @@ echo "LUBUNTU Quick Start - Validation Output (GCP)"
 echo "============================================================================"
 echo ""
 
-printf "%-28s %s\n" "NOTE: Windows RDP Host  :" "${windows_ip:-<not found>}"
-printf "%-28s %s\n" "NOTE: Lubuntu Host Host :" "${linux_ip:-<not found>}"
+printf "%-28s %s\n" "NOTE: Windows RDP Host:" "${windows_ip:-<not found>}"
+printf "%-28s %s\n" "NOTE: Lubuntu Host:" "${linux_ip:-<not found>}"
 
+echo ""
+# ------------------------------------------------------------------------------
+# Sign-in
+# ------------------------------------------------------------------------------
+# jsmith is in mcloud-users and linux-admins (sudo on the desktop).
+jsmith_password="$(gcloud secrets versions access latest \
+  --secret="jsmith-ad-credentials-lubuntu" 2>/dev/null | jq -r .password 2>/dev/null || true)"
+
+if [ -z "${jsmith_password}" ]; then
+  printf "%-28s %s\n" "ERROR: Sign in:" "Not found (secret jsmith-ad-credentials-lubuntu)"
+else
+  printf "%-28s %s\n" "NOTE: Sign in:" "jsmith / ${jsmith_password}"
+fi
+printf "%-28s %s\n" "" "Desktop: jsmith. Windows: MCLOUD\\jsmith."
+printf "%-28s %s\n" "" "Other users: <user>-ad-credentials-lubuntu"
+printf "%-28s %s\n" "" "in Secret Manager."
 echo ""
